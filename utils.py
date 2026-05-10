@@ -30,3 +30,24 @@ def evaluate_synthesis_costs(clifford_t_sequence: list[str]) -> dict:
     costs["repeated_trials"] = 2 ** t_count
 
     return costs
+
+def _matrix_sqrt_hermitian(matrix: np.ndarray) -> np.ndarray:
+    """
+    Computes the square root of a Hermitian positive semidefinite matrix.
+    """
+    eigenvalues, eigenvectors = np.linalg.eigh(matrix)
+    clipped_eigenvalues = np.clip(eigenvalues, 0.0, None)
+    return (eigenvectors * np.sqrt(clipped_eigenvalues)) @ eigenvectors.conj().T
+
+def density_matrix_fidelity(rho: np.ndarray, sigma: np.ndarray) -> float:
+    """
+    Computes the Uhlmann fidelity between two density matrices.
+
+    For density matrices, the fidelity is
+    F(rho, sigma) = (Tr[sqrt(sqrt(rho) sigma sqrt(rho))])^2.
+    """
+    sqrt_rho = _matrix_sqrt_hermitian(rho)
+    intermediate = sqrt_rho @ sigma @ sqrt_rho
+    sqrt_intermediate = _matrix_sqrt_hermitian(intermediate)
+    fidelity = np.real(np.trace(sqrt_intermediate)) ** 2
+    return float(np.clip(fidelity, 0.0, 1.0))
